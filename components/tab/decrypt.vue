@@ -1,4 +1,18 @@
 <script setup lang="ts">
+import { createKeybindingsHandler } from "tinykeys";
+
+let handler = createKeybindingsHandler({
+    "$mod+KeyD": (event: InputEvent) => {
+        event.preventDefault();
+        const pastedContent = navigator.clipboard.readText();
+        console.log(pastedContent);
+    },
+});
+
+onMounted(() => {
+    window.addEventListener("keydown", handler);
+});
+
 const password = ref("");
 const decryptedData = ref("");
 const salt = ref("");
