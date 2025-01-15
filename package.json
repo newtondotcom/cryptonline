@@ -23,5 +23,8 @@
     "tailwindcss-animate": "^1.0.7",
     "vue": "latest",
     "vue-router": "latest"
+  },
+  "devDependencies": {
+    "tinykeys": "^3.0.0"
   }
 }
