@@ -13,7 +13,7 @@ const encryptedData = ref<{
     ciphertext: "",
     tag: "",
 });
-const valueCopied = ref(false);
+const valueCopied = ref<string>(false);
 
 const copy = () => {
     navigator.clipboard.writeText(JSON.stringify(encryptedData.value));
