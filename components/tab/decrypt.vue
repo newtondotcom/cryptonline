@@ -1,24 +1,40 @@
 <script setup lang="ts">
-import { createKeybindingsHandler } from "tinykeys";
-
-let handler = createKeybindingsHandler({
-    "$mod+KeyD": (event: InputEvent) => {
-        event.preventDefault();
-        const pastedContent = navigator.clipboard.readText();
-        console.log(pastedContent);
-    },
-});
-
-onMounted(() => {
-    window.addEventListener("keydown", handler);
-});
-
+import { useToast } from "@/components/ui/toast/use-toast";
+const { toast } = useToast();
 const password = ref("");
 const decryptedData = ref("");
 const salt = ref("");
 const iv = ref("");
 const ciphertext = ref("");
 const tag = ref("");
+const checkPastedContent = (field: string) => {
+    console.log(field);
+    try {
+        const pastedData = JSON.parse(field);
+
+        if (
+            typeof pastedData === "object" &&
+            "iv" in pastedData &&
+            "salt" in pastedData &&
+            "ciphertext" in pastedData &&
+            "tag" in pastedData
+        ) {
+            iv.value = pastedData.iv;
+            salt.value = pastedData.salt;
+            ciphertext.value = pastedData.ciphertext;
+            tag.value = pastedData.tag;
+            toast({
+                title: "🔗 Pasted",
+                description:
+                    "The pasted content has been successfully parsed and filled into the respective fields.",
+            });
+        }
+    } catch (error) {
+        console.warn(
+            "Pasted content is not valid JSON or does not match the expected structure.",
+        );
+    }
+};
 
 const decrypt = async () => {
     if (
@@ -70,11 +86,17 @@ const decrypt = async () => {
                     id="salt"
                     v-model="salt"
                     placeholder="Enter salt (hex)"
+                    @input="checkPastedContent($event.target.value)"
                 />
             </div>
             <div class="space-y-1">
                 <Label for="iv">Initialization Vector (IV)</Label>
-                <Input id="iv" v-model="iv" placeholder="Enter IV (hex)" />
+                <Input
+                    id="iv"
+                    v-model="iv"
+                    placeholder="Enter IV (hex)"
+                    @input="checkPastedContent($event.target.value)"
+                />
             </div>
             <div class="space-y-1">
                 <Label for="ciphertext">Ciphertext</Label>
@@ -82,11 +104,17 @@ const decrypt = async () => {
                     id="ciphertext"
                     v-model="ciphertext"
                     placeholder="Enter ciphertext (hex)"
+                    @input="checkPastedContent($event.target.value)"
                 />
             </div>
             <div class="space-y-1">
                 <Label for="tag">Authentication Tag</Label>
-                <Input id="tag" v-model="tag" placeholder="Enter tag (hex)" />
+                <Input
+                    id="tag"
+                    v-model="tag"
+                    placeholder="Enter tag (hex)"
+                    @input="checkPastedContent($event.target.value)"
+                />
             </div>
             <div class="space-y-1">
                 <Label for="password">Password</Label>
