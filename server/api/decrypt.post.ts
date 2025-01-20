@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
     const decryptedMnemonic = decryptData(body.encryptedData, body.password);
     return { decryptedMnemonic };
   } catch (error) {
+    console.error(error);
     throw new Error(
       "Decryption failed. Ensure the password and data are correct.",
     );
