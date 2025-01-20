@@ -13,8 +13,8 @@ const encryptedData = ref<{
     ciphertext: "",
     tag: "",
 });
-const valueCopied = ref<string>(false);
 
+const valueCopied = ref<boolean>(false);
 const copy = () => {
     navigator.clipboard.writeText(JSON.stringify(encryptedData.value));
     valueCopied.value = true;
@@ -69,6 +69,7 @@ const encrypt = async () => {
                     type="password"
                     v-model="password"
                     placeholder="Enter password"
+                    v-on:keyup.enter="encrypt"
                 />
             </div>
         </CardContent>
