@@ -1,14 +1,32 @@
 <script setup lang="ts">
 import { useToast } from "@/components/ui/toast/use-toast";
+import { ref } from "vue";
+import { Copy, Check } from "lucide-vue-next";
+
 const { toast } = useToast();
+
 const password = ref("");
 const decryptedData = ref("");
 const salt = ref("");
 const iv = ref("");
 const ciphertext = ref("");
 const tag = ref("");
+
+let saltStored: string;
+let ivStored: string;
+let ciphertextStored: string;
+let tagStored: string;
+
+const valueCopied = ref<boolean>(false);
+const copy = () => {
+    navigator.clipboard.writeText(decryptedData.value);
+    valueCopied.value = true;
+    setTimeout(() => {
+        valueCopied.value = false;
+    }, 200);
+};
+
 const checkPastedContent = (field: string) => {
-    console.log(field);
     try {
         const pastedData = JSON.parse(field);
 
@@ -19,15 +37,24 @@ const checkPastedContent = (field: string) => {
             "ciphertext" in pastedData &&
             "tag" in pastedData
         ) {
+            // Update reactive refs
             iv.value = pastedData.iv;
             salt.value = pastedData.salt;
             ciphertext.value = pastedData.ciphertext;
             tag.value = pastedData.tag;
+
+            ivStored = pastedData.iv;
+            saltStored = pastedData.salt;
+            ciphertextStored = pastedData.ciphertext;
+            tagStored = pastedData.tag;
+
             toast({
                 title: "🔗 Pasted",
                 description:
                     "The pasted content has been successfully parsed and filled into the respective fields.",
             });
+        } else {
+            console.warn("Invalid JSON structure for decryption fields.");
         }
     } catch (error) {
         console.warn(
@@ -44,7 +71,11 @@ const decrypt = async () => {
         !tag.value ||
         !password.value
     ) {
-        alert("All fields are required for decryption.");
+        toast({
+            title: "🚨 Missing Fields",
+            description: "All fields are required for decryption.",
+            variant: "destructive",
+        });
         return;
     }
 
@@ -53,19 +84,27 @@ const decrypt = async () => {
             method: "POST",
             body: {
                 encryptedData: {
-                    salt: salt.value,
-                    iv: iv.value,
-                    ciphertext: ciphertext.value,
-                    tag: tag.value,
+                    salt: saltStored || salt.value,
+                    iv: ivStored || iv.value,
+                    ciphertext: ciphertextStored || ciphertext.value,
+                    tag: tagStored || tag.value,
                 },
                 password: password.value,
             },
         });
 
-        decryptedData.value = data?.decryptedData;
+        decryptedData.value = data?.decryptedMnemonic;
+
+        toast({
+            title: "🔓 Decrypted",
+            description: "The data has been successfully decrypted.",
+        });
     } catch (error) {
-        console.error("Decryption failed:", error);
-        alert("Decryption failed. Check the console for details.");
+        toast({
+            title: "🚨 Decryption Failed",
+            description: "Decryption failed on the server side.",
+            variant: "destructive",
+        });
     }
 };
 </script>
@@ -123,6 +162,7 @@ const decrypt = async () => {
                     type="password"
                     v-model="password"
                     placeholder="Enter password"
+                    v-on:keyup.enter="decrypt"
                 />
             </div>
         </CardContent>
@@ -130,10 +170,16 @@ const decrypt = async () => {
             <Button @click="decrypt">Decrypt</Button>
         </CardFooter>
         <CardContent v-if="decryptedData" class="mt-4">
-            <p class="text-sm">Decrypted Mnemonic:</p>
-            <pre class="text-xs bg-gray-100 p-2 rounded">{{
-                decryptedData
-            }}</pre>
+            <pre
+                class="text-xs bg-gray-100 dark:bg-gray-500 dark:text-black p-2 rounded-md flex flex-row justify-between items-center"
+            >
+                <p>{{ decryptedData }}</p>
+                <Button @click="copy"
+                :class="{ 'shadow-green-200 ': valueCopied }">
+                <Copy v-if="!valueCopied" />
+                <Check v-else/>
+                </Button>
+            </pre>
         </CardContent>
     </Card>
 </template>
