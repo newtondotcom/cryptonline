@@ -15,9 +15,6 @@ export default defineNuxtConfig({
     },
     viewer: false,
   },
-  colorMode: {
-    classSuffix: "",
-  },
   ssr: false,
   app: {
     head: {
