@@ -74,19 +74,20 @@ const encrypt = async () => {
             </div>
         </CardContent>
         <CardFooter>
-            <Button @click="encrypt">Encrypt</Button>
-        </CardFooter>
-        <CardContent v-if="encryptedData.ciphertext" class="mt-4">
-            <pre
-                class="text-xs bg-gray-100 text-white dark:bg-gray-800 dark:text-black p-2 rounded-md flex flex-row justify-between items-center"
+            <div
+                v-if="encryptedData.ciphertext"
+                class="flex flex-row justify-between items-center w-full"
             >
-                <p>{{ encryptedData }}</p>
-                <Button @click="copy"
-                :class="{ 'shadow-green-200 ': valueCopied }">
-                <Copy v-if="!valueCopied" />
-                <Check v-else/>
+                <Badge variant="secondary"> Encrypted </Badge>
+                <Button
+                    @click="copy"
+                    :class="{ 'shadow-green-200 ': valueCopied }"
+                >
+                    <Copy v-if="!valueCopied" />
+                    <Check v-else />
                 </Button>
-            </pre>
-        </CardContent>
+            </div>
+            <Button v-else @click="encrypt">Encrypt</Button>
+        </CardFooter>
     </Card>
 </template>

@@ -170,16 +170,20 @@ const decrypt = async () => {
             <Button @click="decrypt">Decrypt</Button>
         </CardFooter>
         <CardContent v-if="decryptedData" class="mt-4">
-            <pre
-                class="text-xs bg-gray-100 dark:bg-gray-500 dark:text-black p-2 rounded-md flex flex-row justify-between items-center"
+            <div
+                v-if="decryptedData"
+                class="flex flex-row justify-between items-center w-full"
             >
-                <p>{{ decryptedData }}</p>
-                <Button @click="copy"
-                :class="{ 'shadow-green-200 ': valueCopied }">
-                <Copy v-if="!valueCopied" />
-                <Check v-else/>
+                <Badge variant="secondary"> Decrypted </Badge>
+                <Button
+                    @click="copy"
+                    :class="{ 'shadow-green-200 ': valueCopied }"
+                >
+                    <Copy v-if="!valueCopied" />
+                    <Check v-else />
                 </Button>
-            </pre>
+            </div>
+            <Button v-else @click="decrypt">Decrypt</Button>
         </CardContent>
     </Card>
 </template>
