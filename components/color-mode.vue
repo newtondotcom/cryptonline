@@ -1,5 +1,5 @@
 <template>
-    <div class="absolute top-0 right-0">
+    <div class="flex">
         <label
             class="relative cursor-pointer py-2 px-6"
             for="light-switch"
