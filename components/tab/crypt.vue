@@ -78,7 +78,7 @@ const encrypt = async () => {
         </CardFooter>
         <CardContent v-if="encryptedData.ciphertext" class="mt-4">
             <pre
-                class="text-xs bg-gray-100 dark:bg-gray-500 dark:text-black p-2 rounded-md flex flex-row justify-between items-center"
+                class="text-xs bg-gray-100 text-white dark:bg-gray-800 dark:text-black p-2 rounded-md flex flex-row justify-between items-center"
             >
                 <p>{{ encryptedData }}</p>
                 <Button @click="copy"

@@ -1,5 +1,6 @@
 <template>
     <div class="flex flex-col min-h-screen items-center justify-center">
+        <ColorMode />
         <Tabs default-value="crypt" class="w-[500px]">
             <TabsList class="grid w-full grid-cols-2">
                 <TabsTrigger value="crypt">Crypt</TabsTrigger>
