@@ -4,7 +4,6 @@ import type { Config } from "tailwindcss";
 export default {
   darkMode: ["class"],
   safelist: ["dark"],
-  prefix: "",
   content: [],
   theme: {
     container: {
