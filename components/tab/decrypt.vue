@@ -1,23 +1,36 @@
 <script setup lang="ts">
 import { useToast } from "@/components/ui/toast/use-toast";
-import { ref } from "vue";
 import { Copy, Check } from "lucide-vue-next";
+import { useForm, useField } from "vee-validate";
+import { toTypedSchema } from "@vee-validate/zod";
+import * as z from "zod";
+import { decryptData } from "~/lib/crypto";
 
 const { toast } = useToast();
 
-const password = ref("");
+const formSchema = toTypedSchema(
+    z.object({
+        salt: z.string().nonempty("Salt is required"),
+        iv: z.string().nonempty("IV is required"),
+        ciphertext: z.string().nonempty("Ciphertext is required"),
+        tag: z.string().nonempty("Tag is required"),
+        password: z.string().min(4, "Password must be at least 4 characters"),
+    }),
+);
+const form = useForm({
+    validationSchema: formSchema,
+});
+
+const { value: salt, errorMessage: saltError } = useField("salt");
+const { value: iv, errorMessage: ivError } = useField("iv");
+const { value: ciphertext, errorMessage: ciphertextError } =
+    useField("ciphertext");
+const { value: tag, errorMessage: tagError } = useField("tag");
+const { value: password, errorMessage: passwordError } = useField("password");
+
 const decryptedData = ref("");
-const salt = ref("");
-const iv = ref("");
-const ciphertext = ref("");
-const tag = ref("");
+const valueCopied = ref(false);
 
-let saltStored: string;
-let ivStored: string;
-let ciphertextStored: string;
-let tagStored: string;
-
-const valueCopied = ref<boolean>(false);
 const copy = () => {
     navigator.clipboard.writeText(decryptedData.value);
     valueCopied.value = true;
@@ -29,7 +42,6 @@ const copy = () => {
 const checkPastedContent = (field: string) => {
     try {
         const pastedData = JSON.parse(field);
-
         if (
             typeof pastedData === "object" &&
             "iv" in pastedData &&
@@ -37,59 +49,34 @@ const checkPastedContent = (field: string) => {
             "ciphertext" in pastedData &&
             "tag" in pastedData
         ) {
-            // Update reactive refs
-            iv.value = pastedData.iv;
             salt.value = pastedData.salt;
+            iv.value = pastedData.iv;
             ciphertext.value = pastedData.ciphertext;
             tag.value = pastedData.tag;
-
-            ivStored = pastedData.iv;
-            saltStored = pastedData.salt;
-            ciphertextStored = pastedData.ciphertext;
-            tagStored = pastedData.tag;
 
             toast({
                 title: "🔗 Pasted",
                 description:
                     "The pasted content has been successfully parsed and filled into the respective fields.",
             });
-        } else {
-            console.warn("Invalid JSON structure for decryption fields.");
         }
-    } catch (error) {
-        console.warn(
-            "Pasted content is not valid JSON or does not match the expected structure.",
-        );
+    } catch {
+        console.warn("Invalid JSON structure.");
     }
 };
 
-const decrypt = async () => {
-    if (
-        !salt.value ||
-        !iv.value ||
-        !ciphertext.value ||
-        !tag.value ||
-        !password.value
-    ) {
-        toast({
-            title: "🚨 Missing Fields",
-            description: "All fields are required for decryption.",
-            variant: "destructive",
-        });
-        return;
-    }
-
+const onSubmit = form.handleSubmit(async (values) => {
     try {
         const data = await $fetch("/api/decrypt", {
             method: "POST",
             body: {
                 encryptedData: {
-                    salt: saltStored || salt.value,
-                    iv: ivStored || iv.value,
-                    ciphertext: ciphertextStored || ciphertext.value,
-                    tag: tagStored || tag.value,
+                    salt: values.salt,
+                    iv: values.iv,
+                    ciphertext: values.ciphertext,
+                    tag: values.tag,
                 },
-                password: password.value,
+                password: values.password,
             },
         });
 
@@ -106,84 +93,98 @@ const decrypt = async () => {
             variant: "destructive",
         });
     }
-};
+});
 </script>
 
 <template>
     <Card>
         <CardHeader>
             <CardTitle>Decrypt</CardTitle>
-            <CardDescription>
-                Manually enter the decryption parameters to retrieve the
-                original critical data.
-            </CardDescription>
-        </CardHeader>
-        <CardContent class="space-y-2">
-            <div class="space-y-1">
-                <Label for="salt">Salt</Label>
-                <Input
-                    id="salt"
-                    v-model="salt"
-                    placeholder="Enter salt (hex)"
-                    @input="checkPastedContent($event.target.value)"
-                />
-            </div>
-            <div class="space-y-1">
-                <Label for="iv">Initialization Vector (IV)</Label>
-                <Input
-                    id="iv"
-                    v-model="iv"
-                    placeholder="Enter IV (hex)"
-                    @input="checkPastedContent($event.target.value)"
-                />
-            </div>
-            <div class="space-y-1">
-                <Label for="ciphertext">Ciphertext</Label>
-                <Input
-                    id="ciphertext"
-                    v-model="ciphertext"
-                    placeholder="Enter ciphertext (hex)"
-                    @input="checkPastedContent($event.target.value)"
-                />
-            </div>
-            <div class="space-y-1">
-                <Label for="tag">Authentication Tag</Label>
-                <Input
-                    id="tag"
-                    v-model="tag"
-                    placeholder="Enter tag (hex)"
-                    @input="checkPastedContent($event.target.value)"
-                />
-            </div>
-            <div class="space-y-1">
-                <Label for="password">Password</Label>
-                <Input
-                    id="password"
-                    type="password"
-                    v-model="password"
-                    placeholder="Enter password"
-                    v-on:keyup.enter="decrypt"
-                />
-            </div>
-        </CardContent>
-        <CardFooter>
-            <Button @click="decrypt">Decrypt</Button>
-        </CardFooter>
-        <CardContent v-if="decryptedData" class="mt-4">
-            <div
-                v-if="decryptedData"
-                class="flex flex-row justify-between items-center w-full"
+            <CardDescription
+                >Manually enter the decryption parameters to retrieve the
+                original critical data.</CardDescription
             >
-                <Badge variant="secondary"> Decrypted </Badge>
-                <Button
-                    @click="copy"
-                    :class="{ 'shadow-green-200 ': valueCopied }"
+        </CardHeader>
+        <form @submit="onSubmit">
+            <CardContent class="space-y-2">
+                <div class="space-y-1">
+                    <Label for="salt">Salt</Label>
+                    <Input
+                        id="salt"
+                        v-model="salt"
+                        placeholder="Enter salt (hex)"
+                        @input="checkPastedContent($event.target.value)"
+                    />
+                    <p class="text-red-500 text-sm" v-if="saltError">
+                        {{ saltError }}
+                    </p>
+                </div>
+                <div class="space-y-1">
+                    <Label for="iv">Initialization Vector (IV)</Label>
+                    <Input
+                        id="iv"
+                        v-model="iv"
+                        placeholder="Enter IV (hex)"
+                        @input="checkPastedContent($event.target.value)"
+                    />
+                    <p class="text-red-500 text-sm" v-if="ivError">
+                        {{ ivError }}
+                    </p>
+                </div>
+                <div class="space-y-1">
+                    <Label for="ciphertext">Ciphertext</Label>
+                    <Input
+                        id="ciphertext"
+                        v-model="ciphertext"
+                        placeholder="Enter ciphertext (hex)"
+                        @input="checkPastedContent($event.target.value)"
+                    />
+                    <p class="text-red-500 text-sm" v-if="ciphertextError">
+                        {{ ciphertextError }}
+                    </p>
+                </div>
+                <div class="space-y-1">
+                    <Label for="tag">Authentication Tag</Label>
+                    <Input
+                        id="tag"
+                        v-model="tag"
+                        placeholder="Enter tag (hex)"
+                        @input="checkPastedContent($event.target.value)"
+                    />
+                    <p class="text-red-500 text-sm" v-if="tagError">
+                        {{ tagError }}
+                    </p>
+                </div>
+                <div class="space-y-1">
+                    <Label for="password">Password</Label>
+                    <Input
+                        id="password"
+                        type="password"
+                        v-model="password"
+                        placeholder="Enter password"
+                    />
+                    <p class="text-red-500 text-sm" v-if="passwordError">
+                        {{ passwordError }}
+                    </p>
+                </div>
+            </CardContent>
+            <CardFooter class="mt-4">
+                <Button v-if="!decryptedData" type="submit">Decrypt</Button>
+                <div
+                    v-else
+                    class="flex flex-row justify-between items-center w-full"
                 >
-                    <Copy v-if="!valueCopied" />
-                    <Check v-else />
-                </Button>
-            </div>
-            <Button v-else @click="decrypt">Decrypt</Button>
-        </CardContent>
+                    <Badge variant="secondary"> Decrypted </Badge>
+                    <Button
+                        type="button"
+                        @click="copy"
+                        :class="{ 'shadow-green-200 ': valueCopied }"
+                    >
+                        <Copy v-if="!valueCopied" />
+                        <Check v-else />
+                    </Button>
+                </div>
+            </CardFooter>
+        </form>
     </Card>
 </template>

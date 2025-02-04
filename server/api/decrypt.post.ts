@@ -7,6 +7,7 @@ export default defineEventHandler(async (event) => {
   if (!body.encryptedData || !body.password) {
     throw new Error("Encrypted data and password are required.");
   }
+  console.log(body.encryptedData, body.password);
 
   try {
     const decryptedMnemonic = decryptData(body.encryptedData, body.password);
