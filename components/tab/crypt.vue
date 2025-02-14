@@ -57,7 +57,7 @@ const onSubmit = form.handleSubmit(async (values) => {
 </script>
 
 <template>
-    <Card>
+    <Card class="h-[600px]">
         <CardHeader>
             <CardTitle>Crypt</CardTitle>
             <CardDescription>
