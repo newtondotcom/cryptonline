@@ -4,7 +4,6 @@ import { Copy, Check } from "lucide-vue-next";
 import { useForm, useField } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 import * as z from "zod";
-import { decryptData } from "~/lib/crypto";
 
 const { toast } = useToast();
 
@@ -65,16 +64,28 @@ const checkPastedContent = (field: string) => {
     }
 };
 
+const checkStringIsJsonAndExtract = (str: string, valueToExtract: string) => {
+    try {
+        const dictionnay = JSON.parse(str);
+        return dictionnay[valueToExtract];
+    } catch (e) {
+        return str;
+    }
+};
+
 const onSubmit = form.handleSubmit(async (values) => {
     try {
         const data = await $fetch("/api/decrypt", {
             method: "POST",
             body: {
                 encryptedData: {
-                    salt: values.salt,
-                    iv: values.iv,
-                    ciphertext: values.ciphertext,
-                    tag: values.tag,
+                    salt: checkStringIsJsonAndExtract(values.salt, "salt"),
+                    iv: checkStringIsJsonAndExtract(values.iv, "iv"),
+                    ciphertext: checkStringIsJsonAndExtract(
+                        values.ciphertext,
+                        "ciphertext",
+                    ),
+                    tag: checkStringIsJsonAndExtract(values.tag, "tag"),
                 },
                 password: values.password,
             },
@@ -97,7 +108,7 @@ const onSubmit = form.handleSubmit(async (values) => {
 </script>
 
 <template>
-    <Card>
+    <Card class="h-[600px]">
         <CardHeader>
             <CardTitle>Decrypt</CardTitle>
             <CardDescription
